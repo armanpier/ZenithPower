@@ -375,11 +375,11 @@ namespace ZenithPower.UI.ViewModels
         private void ApplySmartCurveOptimizer()
         {
             var telemetry = _governor.GetTelemetry();
-            int baseBias = SelectedProfileType == ProfileType.SuperSaver ? -25 : -20;
+            int baseBias = SelectedProfileType == ProfileType.SuperSaver ? -28 : -22;
             var optimal = CurveOptimizerBalancer.CalculateOptimalOffsets(telemetry.Cores, baseBias, SelectedWorkloadPreset);
             _governor.ApplyCurveOptimizerAsync(optimal);
 
-            SystemAlert = $"Smart Curve Optimizer applied! Star Cores protected (0 to -7), Secondary cores set to {baseBias}.";
+            SystemAlert = $"Smart Curve Optimizer tuned all {telemetry.PhysicalCoreCount} physical cores! Star Cores protected (0 to -5) for peak boost; secondary cores set to {baseBias}.";
             HasAlert = true;
             UpdateTelemetry();
         }
@@ -453,6 +453,10 @@ namespace ZenithPower.UI.ViewModels
                     Cores[i].NominalMhz = snap.Cores[i].NominalMhz;
                     Cores[i].EffectiveMhz = snap.Cores[i].EffectiveMhz;
                     Cores[i].CurveOffset = snap.Cores[i].CurveOffset;
+                    Cores[i].IsStarCore = snap.Cores[i].IsStarCore;
+                    Cores[i].StarBadgeText = snap.Cores[i].StarBadgeText;
+                    Cores[i].MaxPerfRating = snap.Cores[i].MaxPerfRating;
+                    Cores[i].LogicalThreadsLabel = snap.Cores[i].LogicalThreadsLabel;
                 }
             }
         }

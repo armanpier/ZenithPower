@@ -24,10 +24,10 @@ namespace ZenithPower.Core.Engine
             {
                 int assignedOffset;
 
-                if (core.IsProblematic)
+                if (core.IsProblematic || core.CurveOffset > 0)
                 {
-                    // Problematic or weak cores must NEVER receive negative bias.
-                    // Assign non-negative or slight positive compensation.
+                    // Problematic or weak cores (or cores with positive offset) must NEVER receive negative bias.
+                    // Preserve non-negative or positive compensation to prevent crashing.
                     assignedOffset = Math.Max(0, core.CurveOffset >= 0 ? core.CurveOffset : 2);
                 }
                 else if (core.IsStarCore || core.Ranking <= 2)

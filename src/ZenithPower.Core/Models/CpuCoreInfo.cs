@@ -9,7 +9,10 @@ namespace ZenithPower.Core.Models
 
         public int CoreIndex { get; set; }
         public bool IsStarCore { get; set; }
+        public string StarBadgeText { get; set; } = string.Empty;
         public int Ranking { get; set; }
+        public int MaxPerfRating { get; set; } = 100;
+        public string LogicalThreadsLabel { get; set; } = string.Empty;
         public double NominalMhz { get; set; }
         public double EffectiveMhz { get; set; }
         public int CurveOffset { get; set; }
@@ -22,7 +25,10 @@ namespace ZenithPower.Core.Models
             double nominalMhz,
             double effectiveMhz,
             int curveOffset = 0,
-            bool isProblematic = false)
+            bool isProblematic = false,
+            string starBadgeText = "",
+            int maxPerfRating = 100,
+            string logicalThreadsLabel = "")
         {
             if (curveOffset < MinCurveOffset || curveOffset > MaxCurveOffset)
             {
@@ -39,6 +45,13 @@ namespace ZenithPower.Core.Models
             EffectiveMhz = effectiveMhz;
             CurveOffset = curveOffset;
             IsProblematic = isProblematic;
+            StarBadgeText = !string.IsNullOrEmpty(starBadgeText)
+                ? starBadgeText
+                : (isStarCore ? $"★ STAR #{ranking}" : string.Empty);
+            MaxPerfRating = maxPerfRating;
+            LogicalThreadsLabel = !string.IsNullOrEmpty(logicalThreadsLabel)
+                ? logicalThreadsLabel
+                : $"Core {coreIndex}";
         }
 
         public double ClockStretchingRatio =>

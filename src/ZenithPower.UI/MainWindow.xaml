@@ -616,8 +616,8 @@
                     <Border Grid.Row="0" Style="{StaticResource CardPanel}">
                         <Grid>
                             <StackPanel>
-                                <TextBlock Text="PER-CORE CPU CURVE OPTIMIZER &amp; STAR-CORE PROTECTION" Foreground="#F8FAFC" FontSize="15" FontWeight="Bold"/>
-                                <TextBlock Text="Star Cores (★) achieve the highest boost clocks and are guarded with conservative offsets. Other cores receive negative offsets to lower package power and temperatures." Foreground="#94A3B8" Margin="0,4,0,0"/>
+                                <TextBlock Text="PER-CORE CPU CURVE OPTIMIZER — PHYSICAL CORE TOPOLOGY" Foreground="#F8FAFC" FontSize="15" FontWeight="Bold"/>
+                                <TextBlock Text="AMD CPPC Preferred Cores (★) achieve the highest boost clocks and are guarded with conservative offsets. Secondary cores receive negative offsets to lower package power and temperatures." Foreground="#94A3B8" Margin="0,4,0,0"/>
                             </StackPanel>
                             <Button Content="⚡ Auto-Tune All Cores" Command="{Binding AutoTuneAllCoresCommand}"
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Padding="14,8"
@@ -634,26 +634,31 @@
                                         <Border Background="#0F1520" CornerRadius="6" Padding="12,8" Margin="0,3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="140"/>
-                                                    <ColumnDefinition Width="160"/>
+                                                    <ColumnDefinition Width="200"/>
+                                                    <ColumnDefinition Width="180"/>
                                                     <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="100"/>
-                                                    <ColumnDefinition Width="120"/>
+                                                    <ColumnDefinition Width="90"/>
+                                                    <ColumnDefinition Width="110"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <!-- Core Index & Star Badge -->
+                                                <!-- Core Index, Threads & Star Badge -->
                                                 <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding CoreIndex, StringFormat='{}Core {0}'}" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                                    <Border Visibility="{Binding IsStarCore, Converter={x:Null}}" 
-                                                            Background="{StaticResource AccentAmberBrush}" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                                                        <TextBlock Text="★ STAR" Foreground="#0F1520" FontSize="9" FontWeight="Black"/>
+                                                    <TextBlock Text="{Binding CoreIndex, StringFormat='{}Core {0}'}" FontWeight="Bold" Foreground="#F8FAFC" FontSize="13"/>
+                                                    <TextBlock Text="{Binding LogicalThreadsLabel, StringFormat='{} ({0})'}" Foreground="#64748B" FontSize="10" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                                    <Border Visibility="{Binding IsStarCore, Converter={StaticResource BoolToVis}}" 
+                                                            Background="{StaticResource AccentAmberBrush}" CornerRadius="3" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding StarBadgeText}" Foreground="#0F1520" FontSize="9" FontWeight="Black"/>
                                                     </Border>
                                                 </StackPanel>
 
-                                                <!-- Clocks -->
+                                                <!-- CPPC Hardware Rating & Clocks -->
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding NominalMhz, StringFormat='{}Cap: {0:F0} MHz'}" Foreground="#64748B" FontSize="11"/>
-                                                    <TextBlock Text="{Binding EffectiveMhz, StringFormat='{}Current: {0:F0} MHz'}" Foreground="{StaticResource AccentNormalBrush}" FontWeight="SemiBold" FontSize="12"/>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding MaxPerfRating, StringFormat='{}CPPC: {0}%'}" Foreground="{StaticResource AccentAmberBrush}" FontWeight="SemiBold" FontSize="11"/>
+                                                        <TextBlock Text=" • " Foreground="#475569" FontSize="11"/>
+                                                        <TextBlock Text="{Binding NominalMhz, StringFormat='{}Cap: {0:F0}MHz'}" Foreground="#64748B" FontSize="11"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding EffectiveMhz, StringFormat='{}Current: {0:F0} MHz'}" Foreground="{StaticResource AccentNormalBrush}" FontWeight="Bold" FontSize="12" Margin="0,1,0,0"/>
                                                 </StackPanel>
 
                                                 <!-- Slider for Curve Offset -->

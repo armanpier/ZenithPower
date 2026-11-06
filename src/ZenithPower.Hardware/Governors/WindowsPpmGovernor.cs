@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using ZenithPower.Core.Abstractions;
 using ZenithPower.Core.Models;
 using ZenithPower.Hardware.Interop;
+using ZenithPower.Hardware.Topology;
 
 namespace ZenithPower.Hardware.Governors
 {
@@ -15,10 +16,12 @@ namespace ZenithPower.Hardware.Governors
         private PowerProfile _activeProfile = PowerProfile.CreateDefault(ProfileType.Normal);
         private readonly string _cpuName;
         private readonly int _logicalCoreCount;
+        private readonly int _physicalCoreCount;
         private readonly uint _baseMaxMhz;
         private PerformanceCounter? _totalPerfCounter;
         private PerformanceCounter? _totalUtilityCounter;
         private readonly List<PerformanceCounter> _corePerfCounters = new();
+        private readonly List<PhysicalCoreData> _physicalCores = new();
         private readonly List<CpuCoreInfo> _cachedCores = new();
 
         public PowerProfile ActiveProfile => _activeProfile;
@@ -28,26 +31,33 @@ namespace ZenithPower.Hardware.Governors
         {
             _logicalCoreCount = Environment.ProcessorCount;
 
-            // 1. Read real CPU Name from Windows Registry (instant, no WMI overhead)
+            // 1. Read real CPU Name from Windows Registry
             _cpuName = ReadCpuNameFromRegistry();
 
             // 2. Query initial base MaxMhz from CallNtPowerInformation
             _baseMaxMhz = QueryBaseMaxMhz();
 
-            // 3. Initialize Windows Performance Counters for real-time frequency & utility
+            // 3. Detect true physical CPU topology and hardware CPPC star core rankings
+            _physicalCores = CpuTopologyDetector.DetectTopology();
+            _physicalCoreCount = _physicalCores.Count;
+
+            // 4. Initialize Windows Performance Counters for overall and per-physical core monitoring
             InitializePerformanceCounters();
 
-            // 4. Populate initial cores list
-            for (int i = 0; i < _logicalCoreCount; i++)
+            // 5. Populate initial physical cores list
+            foreach (var core in _physicalCores)
             {
-                bool isStar = i < 2; // Star core heuristic for preferred cores
                 _cachedCores.Add(new CpuCoreInfo(
-                    coreIndex: i,
-                    isStarCore: isStar,
-                    ranking: i + 1,
+                    coreIndex: core.PhysicalIndex,
+                    isStarCore: core.IsStar,
+                    ranking: core.Ranking,
                     nominalMhz: _baseMaxMhz,
                     effectiveMhz: _baseMaxMhz,
-                    curveOffset: 0));
+                    curveOffset: 0,
+                    isProblematic: false,
+                    starBadgeText: core.StarBadge,
+                    maxPerfRating: core.MaxPerfPercentage,
+                    logicalThreadsLabel: core.ThreadsLabel));
             }
         }
 
@@ -88,17 +98,17 @@ namespace ZenithPower.Hardware.Governors
             try
             {
                 _totalPerfCounter = new PerformanceCounter("Processor Information", "% Processor Performance", "_Total");
-                _totalPerfCounter.NextValue(); // Prime the counter
+                _totalPerfCounter.NextValue();
 
                 _totalUtilityCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total");
                 _totalUtilityCounter.NextValue();
 
-                // Core counters (0,0) to (0,N-1)
-                for (int i = 0; i < Math.Min(32, _logicalCoreCount); i++)
+                // Initialize counter for each physical core using its primary logical thread
+                foreach (var core in _physicalCores)
                 {
                     try
                     {
-                        var pc = new PerformanceCounter("Processor Information", "% Processor Performance", $"0,{i}");
+                        var pc = new PerformanceCounter("Processor Information", "% Processor Performance", $"0,{core.PrimaryThreadId}");
                         pc.NextValue();
                         _corePerfCounters.Add(pc);
                     }
@@ -110,7 +120,6 @@ namespace ZenithPower.Hardware.Governors
             }
             catch
             {
-                // In non-admin environments or minimal containers
             }
         }
 
@@ -259,9 +268,8 @@ namespace ZenithPower.Hardware.Governors
 
             // Real active average frequency = BaseMaxMhz * (perfPercent / 100.0)
             double currentActiveMhz = _baseMaxMhz * (perfPercent / 100.0);
-            double effectiveMhz = currentActiveMhz;
 
-            // Query per-core frequencies
+            // Query per-physical-core frequencies
             for (int i = 0; i < _cachedCores.Count; i++)
             {
                 double corePerf = perfPercent;
@@ -289,7 +297,7 @@ namespace ZenithPower.Hardware.Governors
             return new TelemetrySnapshot
             {
                 CpuName = _cpuName,
-                PhysicalCoreCount = _logicalCoreCount / 2,
+                PhysicalCoreCount = _physicalCoreCount,
                 LogicalCoreCount = _logicalCoreCount,
                 CpuUsagePercent = Math.Clamp(utilityPercent, 0.0, 100.0),
                 CpuPackageTempC = estimatedTempC,

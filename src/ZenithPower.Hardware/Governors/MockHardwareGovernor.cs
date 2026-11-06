@@ -18,15 +18,23 @@ namespace ZenithPower.Hardware.Governors
         {
             for (int i = 0; i < coreCount; i++)
             {
-                bool isStar = i < 2;
+                bool isStar = i < 2; // Top 2 preferred Star Cores
                 int rank = i + 1;
+                string badge = isStar ? $"★ STAR #{rank}" : string.Empty;
+                int maxPerf = isStar ? 212 : (200 - i * 3);
+                string threads = $"Threads {i * 2}, {i * 2 + 1}";
+
                 _cores.Add(new CpuCoreInfo(
                     coreIndex: i,
                     isStarCore: isStar,
                     ranking: rank,
                     nominalMhz: isStar ? 5050.0 : 4800.0,
                     effectiveMhz: isStar ? 5040.0 : 4790.0,
-                    curveOffset: 0));
+                    curveOffset: 0,
+                    isProblematic: false,
+                    starBadgeText: badge,
+                    maxPerfRating: maxPerf,
+                    logicalThreadsLabel: threads));
             }
         }
 
