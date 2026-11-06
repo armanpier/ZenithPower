@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ZenithPower.UI.ViewModels"
         mc:Ignorable="d"
-        Title="ZenithPower — Smart Hardware Governor &amp; Voltage System"
+        Title="ZenithPower — Smart CPU Power, Frequency &amp; Voltage Governor"
         Height="820" Width="1240"
         WindowStartupLocation="CenterScreen"
         Background="#0D1117" Foreground="#F0F6FC"
@@ -85,16 +85,24 @@
                     <TextBlock Text="⚡ ZENITH" Foreground="{StaticResource AccentBlueBrush}" FontSize="20" FontWeight="Black" VerticalAlignment="Center"/>
                     <TextBlock Text="POWER" Foreground="#F0F6FC" FontSize="20" FontWeight="Black" Margin="4,0,0,0" VerticalAlignment="Center"/>
                     <Border Background="#238636" CornerRadius="4" Padding="6,2" Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="SMART GOVERNOR" Foreground="White" FontSize="10" FontWeight="Bold"/>
+                        <TextBlock Text="CPU GOVERNOR" Foreground="White" FontSize="10" FontWeight="Bold"/>
                     </Border>
                 </StackPanel>
 
-                <!-- Zero-BSOD Mock Toggle -->
+                <!-- Hardware Identification Center -->
+                <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Processor: " Foreground="#8B949E" FontSize="13"/>
+                    <TextBlock Text="{Binding CpuName}" Foreground="{StaticResource AccentGoldBrush}" FontWeight="Bold" FontSize="13"/>
+                    <TextBlock Text=" • " Foreground="#8B949E" FontSize="13"/>
+                    <TextBlock Text="{Binding PhysicalCoreCount, StringFormat='{}{0} Cores'}" Foreground="#F0F6FC" FontWeight="SemiBold" FontSize="13"/>
+                    <TextBlock Text=" / " Foreground="#8B949E" FontSize="13"/>
+                    <TextBlock Text="{Binding LogicalCoreCount, StringFormat='{}{0} Threads'}" Foreground="#F0F6FC" FontWeight="SemiBold" FontSize="13"/>
+                </StackPanel>
+
+                <!-- Safe Mock Mode Toggle -->
                 <StackPanel Orientation="Horizontal" Grid.Column="2" VerticalAlignment="Center">
-                    <TextBlock Text="Zero-BSOD Safe Mock Mode:" Foreground="#8B949E" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
+                    <TextBlock Text="Simulation Mode:" Foreground="#8B949E" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12"/>
                     <CheckBox IsChecked="{Binding IsMockMode}" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding IsMockMode, Converter={x:Null}}" 
-                               Foreground="{Binding IsMockMode, Converter={x:Null}}" Margin="6,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -104,7 +112,7 @@
                 Visibility="{Binding HasAlert, Converter={x:Null}}">
             <Grid>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="⚠️ " FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock Text="ℹ️ " FontSize="14" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding SystemAlert}" Foreground="#E3B341" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button Content="Dismiss" Command="{Binding DismissAlertCommand}" HorizontalAlignment="Right"
@@ -114,11 +122,11 @@
 
         <!-- MAIN CONTENT WITH TABS -->
         <TabControl Grid.Row="2" Background="Transparent" BorderThickness="0" Margin="14,10">
-            <!-- TAB 1: DASHBOARD & POWER PROFILES -->
-            <TabItem Header="Dashboard &amp; Profiles" FontSize="14" FontWeight="SemiBold">
+            <!-- TAB 1: DASHBOARD & CPU POWER PROFILES -->
+            <TabItem Header="CPU Profiles &amp; Controls" FontSize="14" FontWeight="SemiBold">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="0,10">
-                        <!-- LIVE TELEMETRY CARDS -->
+                        <!-- REAL-TIME TELEMETRY CARDS -->
                         <Grid Margin="0,0,0,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -127,51 +135,50 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <!-- Nominal vs Effective Clock -->
+                            <!-- Live CPU Clock Speed -->
                             <Border Grid.Column="0" Style="{StaticResource CardPanel}">
                                 <StackPanel>
-                                    <TextBlock Text="CPU EFFECTIVE / NOMINAL" Style="{StaticResource MetricLabel}"/>
+                                    <TextBlock Text="LIVE CPU CLOCK FREQUENCY" Style="{StaticResource MetricLabel}"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                         <TextBlock Text="{Binding EffectiveMhz, StringFormat='{}{0:F0}'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentBlueBrush}"/>
-                                        <TextBlock Text=" / " Style="{StaticResource MetricValue}" Foreground="#8B949E"/>
-                                        <TextBlock Text="{Binding NominalMhz, StringFormat='{}{0:F0} MHz'}" Style="{StaticResource MetricValue}"/>
+                                        <TextBlock Text=" MHz" Style="{StaticResource MetricValue}" Foreground="#8B949E" FontSize="16" VerticalAlignment="Bottom"/>
                                     </StackPanel>
-                                    <TextBlock Text="APERF/MPERF Clock Cycle Rate" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding NominalMhz, StringFormat='{}Target Cap: {0:F0} MHz'}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Clock Stretching Status -->
+                            <!-- CPU Load & Stretching -->
                             <Border Grid.Column="1" Style="{StaticResource CardPanel}">
                                 <StackPanel>
-                                    <TextBlock Text="CLOCK STRETCHING DIAGNOSTIC" Style="{StaticResource MetricLabel}"/>
-                                    <TextBlock Text="{Binding ClockStretchingStatus}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentGreenBrush}"/>
-                                    <TextBlock Text="{Binding ClockStretchingRatio, StringFormat='{}Execution Ratio: {0:P1}'}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                                    <TextBlock Text="CPU LOAD &amp; STRETCHING" Style="{StaticResource MetricLabel}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                        <TextBlock Text="{Binding CpuUsagePercent, StringFormat='{}{0:F1}%'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentGreenBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding ClockStretchingStatus}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
-                            <!-- CPU Package Power & Temp -->
+                            <!-- CPU Power & Temp -->
                             <Border Grid.Column="2" Style="{StaticResource CardPanel}">
                                 <StackPanel>
-                                    <TextBlock Text="CPU PACKAGE POWER &amp; TEMP" Style="{StaticResource MetricLabel}"/>
+                                    <TextBlock Text="PACKAGE POWER &amp; TEMP" Style="{StaticResource MetricLabel}"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                        <TextBlock Text="{Binding CpuPowerW, StringFormat='{}{0:F1}W'}" Style="{StaticResource MetricValue}"/>
+                                        <TextBlock Text="{Binding CpuPowerW, StringFormat='{}{0:F0}W'}" Style="{StaticResource MetricValue}"/>
                                         <TextBlock Text=" • " Style="{StaticResource MetricValue}" Foreground="#8B949E"/>
-                                        <TextBlock Text="{Binding CpuTempC, StringFormat='{}{0:F1}°C'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentGoldBrush}"/>
+                                        <TextBlock Text="{Binding CpuTempC, StringFormat='{}{0:F0}°C'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentGoldBrush}"/>
                                     </StackPanel>
-                                    <TextBlock Text="Package PPT / PL1 Live Draw" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                                    <TextBlock Text="Dynamic Thermal &amp; Watt Draw" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
-                            <!-- GPU Power & Temp -->
+                            <!-- Active Throttle Limit -->
                             <Border Grid.Column="3" Style="{StaticResource CardPanel}">
                                 <StackPanel>
-                                    <TextBlock Text="GPU POWER &amp; CLOCK" Style="{StaticResource MetricLabel}"/>
+                                    <TextBlock Text="THROTTLE LIMIT (CAP)" Style="{StaticResource MetricLabel}"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                        <TextBlock Text="{Binding GpuPowerW, StringFormat='{}{0:F1}W'}" Style="{StaticResource MetricValue}"/>
-                                        <TextBlock Text=" • " Style="{StaticResource MetricValue}" Foreground="#8B949E"/>
-                                        <TextBlock Text="{Binding GpuClockMhz, StringFormat='{}{0:F0}MHz'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentPurpleBrush}"/>
+                                        <TextBlock Text="{Binding CurrentThrottleMaxPercent, StringFormat='{}{0}%'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentPurpleBrush}"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding GpuTempC, StringFormat='{}GPU Core: {0:F1}°C'}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding CurrentThrottleMinPercent, StringFormat='{}Min Idle P-State: {0}%'}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -179,7 +186,7 @@
                         <!-- POWER PROFILE SELECTOR -->
                         <Border Style="{StaticResource CardPanel}">
                             <StackPanel>
-                                <TextBlock Text="SELECT ACTIVE POWER PROFILE" Foreground="#F0F6FC" FontSize="15" FontWeight="Bold" Margin="0,0,0,12"/>
+                                <TextBlock Text="SELECT ACTIVE CPU POWER PROFILE" Foreground="#F0F6FC" FontSize="15" FontWeight="Bold" Margin="0,0,0,12"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -194,7 +201,7 @@
                                             Command="{Binding SelectProfileCommand}" CommandParameter="SuperSaver">
                                         <StackPanel>
                                             <TextBlock Text="🍃 SUPER SAVER" Foreground="{StaticResource AccentGreenBrush}" FontWeight="Bold" FontSize="13"/>
-                                            <TextBlock Text="Icy-cold idle, 35W Eco, EPP 85, instant burst response." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock Text="Caps frequency to 65%, boost disabled, cold idle, instant burst." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Button>
 
@@ -203,7 +210,7 @@
                                             Command="{Binding SelectProfileCommand}" CommandParameter="Saver">
                                         <StackPanel>
                                             <TextBlock Text="🌱 SAVER" Foreground="#F0F6FC" FontWeight="Bold" FontSize="13"/>
-                                            <TextBlock Text="Balanced Eco, 65W, EPP 65, efficient boost." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock Text="Caps frequency to 85%, efficient boost, balanced power." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Button>
 
@@ -212,7 +219,7 @@
                                             Command="{Binding SelectProfileCommand}" CommandParameter="Normal">
                                         <StackPanel>
                                             <TextBlock Text="⚖️ NORMAL" Foreground="{StaticResource AccentBlueBrush}" FontWeight="Bold" FontSize="13"/>
-                                            <TextBlock Text="Standard balanced scaling, stock TDP, safe negative baseline." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock Text="100% clock cap, standard boost, balanced responsive scaling." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Button>
 
@@ -221,7 +228,7 @@
                                             Command="{Binding SelectProfileCommand}" CommandParameter="Performance">
                                         <StackPanel>
                                             <TextBlock Text="🚀 PERFORMANCE" Foreground="{StaticResource AccentPurpleBrush}" FontWeight="Bold" FontSize="13"/>
-                                            <TextBlock Text="EPP 25, quick clock ramp, aggressive boost." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock Text="100% clock cap, aggressive boost, EPP 20 quick ramp." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Button>
 
@@ -230,14 +237,14 @@
                                             Command="{Binding SelectProfileCommand}" CommandParameter="UltimatePerformance">
                                         <StackPanel>
                                             <TextBlock Text="🔥 ULTIMATE" Foreground="{StaticResource AccentRedBrush}" FontWeight="Bold" FontSize="13"/>
-                                            <TextBlock Text="EPP 0, zero throttle delay, max unlocked board limits." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock Text="100% clock cap, 100% min P-state (no downclocking delay), EPP 0." Foreground="#8B949E" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Button>
                                 </Grid>
                             </StackPanel>
                         </Border>
 
-                        <!-- WORKLOAD PRESETS & RESPONSIVENESS CONTROLS -->
+                        <!-- WORKLOAD PRESETS & MANUAL RESPONSIVENESS SLIDERS -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -247,33 +254,57 @@
                             <!-- Workload Presets -->
                             <Border Grid.Column="0" Style="{StaticResource CardPanel}">
                                 <StackPanel>
-                                    <TextBlock Text="WORKLOAD PRESET OVERLAYS" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    <TextBlock Text="WORKLOAD TARGET TUNING" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
                                     <WrapPanel>
-                                        <Button Content="🎮 Gaming (Single/Dual Peak + GPU)" Command="{Binding SelectPresetCommand}" CommandParameter="Gaming"
-                                                Margin="4" Padding="10,8" Background="#21262D" Foreground="#F0F6FC" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Cursor="Hand"/>
-                                        <Button Content="🎨 Rendering (All-Core PPT + 85°C Cap)" Command="{Binding SelectPresetCommand}" CommandParameter="Rendering"
-                                                Margin="4" Padding="10,8" Background="#21262D" Foreground="#F0F6FC" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Cursor="Hand"/>
+                                        <Button Content="🎮 Gaming (Single/Dual Core Peak)" Command="{Binding SelectPresetCommand}" CommandParameter="Gaming"
+                                                Margin="4" Padding="12,8" Background="#21262D" Foreground="#F0F6FC" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Cursor="Hand"/>
+                                        <Button Content="🎨 Rendering (All-Core Sustained 100%)" Command="{Binding SelectPresetCommand}" CommandParameter="Rendering"
+                                                Margin="4" Padding="12,8" Background="#21262D" Foreground="#F0F6FC" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Cursor="Hand"/>
                                         <Button Content="⚡ Single-Threaded Burst" Command="{Binding SelectPresetCommand}" CommandParameter="SingleThreaded"
-                                                Margin="4" Padding="10,8" Background="#21262D" Foreground="#F0F6FC" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Cursor="Hand"/>
-                                        <Button Content="💥 Turbo (Dual Amplification)" Command="{Binding SelectPresetCommand}" CommandParameter="Turbo"
-                                                Margin="4" Padding="10,8" Background="#21262D" Foreground="{StaticResource AccentGoldBrush}" BorderThickness="1" BorderBrush="{StaticResource AccentGoldBrush}" Cursor="Hand"/>
+                                                Margin="4" Padding="12,8" Background="#21262D" Foreground="#F0F6FC" BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" Cursor="Hand"/>
+                                        <Button Content="💥 Turbo (Max Sustained &amp; Burst)" Command="{Binding SelectPresetCommand}" CommandParameter="Turbo"
+                                                Margin="4" Padding="12,8" Background="#21262D" Foreground="{StaticResource AccentGoldBrush}" BorderThickness="1" BorderBrush="{StaticResource AccentGoldBrush}" Cursor="Hand"/>
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Responsiveness Governor Sliders -->
+                            <!-- Manual CPU Sliders -->
                             <Border Grid.Column="1" Style="{StaticResource CardPanel}">
                                 <StackPanel>
-                                    <TextBlock Text="RESPONSIVENESS GOVERNOR THRESHOLDS" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+                                    <TextBlock Text="MANUAL CPU GOVERNOR CONTROLS" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
                                     
+                                    <!-- Throttle Max % Slider -->
+                                    <Grid Margin="0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="50"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Max Frequency Cap (%):" Foreground="#8B949E" VerticalAlignment="Center"/>
+                                        <Slider Grid.Column="1" Minimum="20" Maximum="100" Value="{Binding CurrentThrottleMaxPercent}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding CurrentThrottleMaxPercent, StringFormat='{}{0}%'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource AccentBlueBrush}"/>
+                                    </Grid>
+
+                                    <!-- Throttle Min % Slider -->
+                                    <Grid Margin="0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="50"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Min Idle State (%):" Foreground="#8B949E" VerticalAlignment="Center"/>
+                                        <Slider Grid.Column="1" Minimum="5" Maximum="100" Value="{Binding CurrentThrottleMinPercent}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding CurrentThrottleMinPercent, StringFormat='{}{0}%'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold"/>
+                                    </Grid>
+
                                     <!-- EPP Slider -->
                                     <Grid Margin="0,4">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="180"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="40"/>
+                                            <ColumnDefinition Width="50"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Energy Perf Preference (EPP):" Foreground="#8B949E" VerticalAlignment="Center" Width="180"/>
+                                        <TextBlock Text="Energy Perf Preference (EPP):" Foreground="#8B949E" VerticalAlignment="Center"/>
                                         <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding CurrentEpp}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding CurrentEpp}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold"/>
                                     </Grid>
@@ -281,25 +312,13 @@
                                     <!-- Increase Threshold Slider -->
                                     <Grid Margin="0,4">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="180"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="40"/>
+                                            <ColumnDefinition Width="50"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Clock Ramp-Up Threshold (%):" Foreground="#8B949E" VerticalAlignment="Center" Width="180"/>
+                                        <TextBlock Text="Ramp-Up Threshold (%):" Foreground="#8B949E" VerticalAlignment="Center"/>
                                         <Slider Grid.Column="1" Minimum="10" Maximum="95" Value="{Binding CurrentIncreaseThreshold}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding CurrentIncreaseThreshold, StringFormat='{}{0}%'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold"/>
-                                    </Grid>
-
-                                    <!-- CPU Power Limit W -->
-                                    <Grid Margin="0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="40"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="CPU Power Limit (Watts):" Foreground="#8B949E" VerticalAlignment="Center" Width="180"/>
-                                        <Slider Grid.Column="1" Minimum="25" Maximum="320" Value="{Binding CurrentCpuPowerLimitW}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding CurrentCpuPowerLimitW, StringFormat='{}{0:F0}W'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Bold"/>
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -308,8 +327,8 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- TAB 2: CURVE OPTIMIZER (PER-CORE) -->
-            <TabItem Header="Curve Optimizer (Per-Core)" FontSize="14" FontWeight="SemiBold">
+            <!-- TAB 2: PER-CORE CURVE OPTIMIZER -->
+            <TabItem Header="Per-Core Curve Optimizer" FontSize="14" FontWeight="SemiBold">
                 <Grid Margin="0,10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -319,16 +338,16 @@
                     <Border Grid.Row="0" Style="{StaticResource CardPanel}">
                         <Grid>
                             <StackPanel>
-                                <TextBlock Text="PER-CORE CURVE OPTIMIZER &amp; STAR-CORE BALANCING" Foreground="#F0F6FC" FontSize="16" FontWeight="Bold"/>
-                                <TextBlock Text="Star Cores (★) boost to peak frequencies and are protected with safe offsets. Non-star cores receive deep negative offsets to unlock thermal and electrical power headroom." Foreground="#8B949E" Margin="0,4,0,0"/>
+                                <TextBlock Text="PER-CORE CPU CURVE OPTIMIZER &amp; STAR-CORE PROTECTION" Foreground="#F0F6FC" FontSize="16" FontWeight="Bold"/>
+                                <TextBlock Text="Star Cores (★) achieve the highest boost clocks and are guarded with conservative offsets. Other cores receive negative offsets to lower package power and temperatures." Foreground="#8B949E" Margin="0,4,0,0"/>
                             </StackPanel>
-                            <Button Content="Auto-Tune All Cores" Command="{Binding AutoTuneAllCoresCommand}"
+                            <Button Content="⚡ Auto-Tune All Cores" Command="{Binding AutoTuneAllCoresCommand}"
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Padding="14,8"
                                     Background="{StaticResource AccentGreenBrush}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
                         </Grid>
                     </Border>
 
-                    <!-- Cores ItemsControl -->
+                    <!-- Cores ScrollViewer -->
                     <Border Grid.Row="1" Style="{StaticResource CardPanel}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Cores}">
@@ -337,14 +356,14 @@
                                         <Border Background="#21262D" CornerRadius="6" Padding="12,10" Margin="0,4" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="120"/>
                                                     <ColumnDefinition Width="140"/>
+                                                    <ColumnDefinition Width="160"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="100"/>
                                                     <ColumnDefinition Width="120"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <!-- Core Name & Badge -->
+                                                <!-- Core Index & Star Badge -->
                                                 <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding CoreIndex, StringFormat='{}Core {0}'}" FontWeight="Bold" Foreground="#F0F6FC"/>
                                                     <Border Visibility="{Binding IsStarCore, Converter={x:Null}}" 
@@ -355,8 +374,8 @@
 
                                                 <!-- Clocks -->
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding NominalMhz, StringFormat='{}Nominal: {0:F0} MHz'}" Foreground="#8B949E" FontSize="11"/>
-                                                    <TextBlock Text="{Binding EffectiveMhz, StringFormat='{}Effective: {0:F0} MHz'}" Foreground="{StaticResource AccentBlueBrush}" FontWeight="SemiBold" FontSize="12"/>
+                                                    <TextBlock Text="{Binding NominalMhz, StringFormat='{}Cap: {0:F0} MHz'}" Foreground="#8B949E" FontSize="11"/>
+                                                    <TextBlock Text="{Binding EffectiveMhz, StringFormat='{}Current: {0:F0} MHz'}" Foreground="{StaticResource AccentBlueBrush}" FontWeight="SemiBold" FontSize="12"/>
                                                 </StackPanel>
 
                                                 <!-- Slider for Curve Offset -->
@@ -379,33 +398,80 @@
                 </Grid>
             </TabItem>
 
-            <!-- TAB 3: QUICK AUTO-TUNING BENCHMARK -->
-            <TabItem Header="Quick Calibration Benchmark" FontSize="14" FontWeight="SemiBold">
+            <!-- TAB 3: BUILT-IN CPU BENCHMARK -->
+            <TabItem Header="Built-in CPU Benchmark" FontSize="14" FontWeight="SemiBold">
                 <Grid Margin="0,10">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
+                    <!-- Top Bar with Run Button -->
                     <Border Grid.Row="0" Style="{StaticResource CardPanel}">
                         <Grid>
                             <StackPanel>
-                                <TextBlock Text="AUTOMATED 3-MINUTE VOLTAGE &amp; POWER CALIBRATION" Foreground="#F0F6FC" FontSize="16" FontWeight="Bold"/>
-                                <TextBlock Text="Probes both downclocking power-savings and peak overclocking headroom without crashing or blue-screening, using real-time APERF/MPERF clock stretching tripwires." Foreground="#8B949E" Margin="0,4,0,0"/>
+                                <TextBlock Text="BUILT-IN HARDWARE CPU BENCHMARK &amp; STRESS ENGINE" Foreground="#F0F6FC" FontSize="16" FontWeight="Bold"/>
+                                <TextBlock Text="Runs parallel floating-point computation across all processor cores to test real multi-core score, single-core burst throughput, and frequency scaling." Foreground="#8B949E" Margin="0,4,0,0"/>
                             </StackPanel>
-                            <Button Content="▶ Start Benchmark" Command="{Binding StartBenchmarkCommand}"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center" Padding="16,10"
-                                    Background="{StaticResource AccentBlueBrush}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                            <Button Content="▶ Run CPU Benchmark" Command="{Binding StartBenchmarkCommand}"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" Padding="18,10"
+                                    Background="{StaticResource AccentBlueBrush}" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand"/>
                         </Grid>
                     </Border>
 
-                    <!-- Benchmark Progress & Output Log -->
-                    <Border Grid.Row="1" Style="{StaticResource CardPanel}">
+                    <!-- Benchmark Score Cards -->
+                    <Grid Grid.Row="1" Margin="0,4,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Multi-Core Score -->
+                        <Border Grid.Column="0" Style="{StaticResource CardPanel}">
+                            <StackPanel>
+                                <TextBlock Text="MULTI-CORE SCORE" Style="{StaticResource MetricLabel}"/>
+                                <TextBlock Text="{Binding LastBenchmarkReport.MultiCoreScore, StringFormat='{}{0:N0}', TargetNullValue='---'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentGreenBrush}"/>
+                                <TextBlock Text="All-Core Parallel Throughput" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Single-Core Score -->
+                        <Border Grid.Column="1" Style="{StaticResource CardPanel}">
+                            <StackPanel>
+                                <TextBlock Text="SINGLE-CORE SCORE" Style="{StaticResource MetricLabel}"/>
+                                <TextBlock Text="{Binding LastBenchmarkReport.SingleCoreScore, StringFormat='{}{0:N0}', TargetNullValue='---'}" Style="{StaticResource MetricValue}" Foreground="{StaticResource AccentBlueBrush}"/>
+                                <TextBlock Text="Single-Core Peak Burst Speed" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Operations / Second -->
+                        <Border Grid.Column="2" Style="{StaticResource CardPanel}">
+                            <StackPanel>
+                                <TextBlock Text="OPERATIONS / SECOND" Style="{StaticResource MetricLabel}"/>
+                                <TextBlock Text="{Binding LastBenchmarkReport.OperationsPerSecond, StringFormat='{}{0:N0}', TargetNullValue='---'}" Style="{StaticResource MetricValue}"/>
+                                <TextBlock Text="{Binding LastBenchmarkReport.ExecutionSeconds, StringFormat='{}Elapsed: {0:F2} seconds'}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Rating / Tier -->
+                        <Border Grid.Column="3" Style="{StaticResource CardPanel}">
+                            <StackPanel>
+                                <TextBlock Text="CPU PERFORMANCE TIER" Style="{StaticResource MetricLabel}"/>
+                                <TextBlock Text="{Binding LastBenchmarkReport.Rating, TargetNullValue='Not Tested'}" Foreground="{StaticResource AccentGoldBrush}" FontSize="15" FontWeight="Bold" Margin="0,8,0,0"/>
+                                <TextBlock Text="{Binding LastBenchmarkReport.ProfileName, StringFormat='{}Profile: {0}'}" Foreground="#8B949E" FontSize="11" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Benchmark Progress & Terminal Log -->
+                    <Border Grid.Row="2" Style="{StaticResource CardPanel}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <StackPanel Grid.Row="0" Margin="0,0,0,10">
@@ -416,19 +482,13 @@
                             <!-- Terminal Logs -->
                             <ListBox Grid.Row="1" ItemsSource="{Binding BenchmarkLogs}" Background="#0D1117" BorderBrush="{StaticResource BorderBrush}" 
                                      Foreground="#7EE787" FontFamily="Consolas" FontSize="12" Padding="8"/>
-
-                            <!-- Summary Card -->
-                            <Border Grid.Row="2" Background="#161B22" BorderBrush="{StaticResource AccentGreenBrush}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,10,0,0">
-                                <TextBlock Text="{Binding BenchmarkSummary, TargetNullValue='No benchmark summary yet. Click Start Benchmark to run.'}" 
-                                           Foreground="#F0F6FC" FontWeight="SemiBold" FontSize="13"/>
-                            </Border>
                         </Grid>
                     </Border>
                 </Grid>
             </TabItem>
 
             <!-- TAB 4: HARDWARE KNOWLEDGE BASE -->
-            <TabItem Header="Hardware Database" FontSize="14" FontWeight="SemiBold">
+            <TabItem Header="CPU Knowledge Base" FontSize="14" FontWeight="SemiBold">
                 <Grid Margin="0,10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -455,48 +515,23 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- GPU & RAM Database -->
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- GPU Profiles -->
-                        <Border Grid.Column="0" Style="{StaticResource CardPanel}">
-                            <StackPanel>
-                                <TextBlock Text="CURATED GPU PROFILES" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                                <DataGrid ItemsSource="{Binding KnownGpus}" AutoGenerateColumns="False" IsReadOnly="True" 
-                                          Background="Transparent" BorderBrush="{StaticResource BorderBrush}" Foreground="#F0F6FC"
-                                          RowBackground="#161B22" AlternatingRowBackground="#21262D" HeadersVisibility="Column">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="GPU Model" Binding="{Binding Name}" Width="2*"/>
-                                        <DataGridTextColumn Header="Stock TDP" Binding="{Binding StockTdpW, StringFormat='{}{0}W'}" Width="80"/>
-                                        <DataGridTextColumn Header="Eco TDP" Binding="{Binding EcoTdpW, StringFormat='{}{0}W'}" Width="80"/>
-                                        <DataGridTextColumn Header="V/F Anchor" Binding="{Binding VfCurveAnchorMilliVolts, StringFormat='{}{0} mV'}" Width="90"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- RAM Profiles -->
-                        <Border Grid.Column="1" Style="{StaticResource CardPanel}">
-                            <StackPanel>
-                                <TextBlock Text="SAFE MEMORY VOLTAGE STANDARDS" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-                                <DataGrid ItemsSource="{Binding KnownMemory}" AutoGenerateColumns="False" IsReadOnly="True" 
-                                          Background="Transparent" BorderBrush="{StaticResource BorderBrush}" Foreground="#F0F6FC"
-                                          RowBackground="#161B22" AlternatingRowBackground="#21262D" HeadersVisibility="Column">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="60"/>
-                                        <DataGridTextColumn Header="JEDEC V" Binding="{Binding JedecVoltageV, StringFormat='{}{0:F2}V'}" Width="70"/>
-                                        <DataGridTextColumn Header="XMP/EXPO V" Binding="{Binding XmpExpoTypicalVoltageV, StringFormat='{}{0:F2}V'}" Width="85"/>
-                                        <DataGridTextColumn Header="Max Safe SoC" Binding="{Binding MaxRecommendedSocVoltageV, StringFormat='{}{0:F2}V'}" Width="95"/>
-                                        <DataGridTextColumn Header="Guideline" Binding="{Binding Guideline}" Width="*"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
+                    <!-- RAM Database -->
+                    <Border Grid.Row="1" Style="{StaticResource CardPanel}">
+                        <StackPanel>
+                            <TextBlock Text="SAFE MEMORY &amp; SOC VOLTAGE SPECIFICATIONS" Foreground="#F0F6FC" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <DataGrid ItemsSource="{Binding KnownMemory}" AutoGenerateColumns="False" IsReadOnly="True" 
+                                      Background="Transparent" BorderBrush="{StaticResource BorderBrush}" Foreground="#F0F6FC"
+                                      RowBackground="#161B22" AlternatingRowBackground="#21262D" HeadersVisibility="Column">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="80"/>
+                                    <DataGridTextColumn Header="JEDEC Voltage" Binding="{Binding JedecVoltageV, StringFormat='{}{0:F2}V'}" Width="110"/>
+                                    <DataGridTextColumn Header="XMP/EXPO Typical" Binding="{Binding XmpExpoTypicalVoltageV, StringFormat='{}{0:F2}V'}" Width="130"/>
+                                    <DataGridTextColumn Header="Max Safe SoC" Binding="{Binding MaxRecommendedSocVoltageV, StringFormat='{}{0:F2}V'}" Width="120"/>
+                                    <DataGridTextColumn Header="Engineering Guideline" Binding="{Binding Guideline}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </TabItem>
         </TabControl>
@@ -505,12 +540,12 @@
         <Border Grid.Row="3" Background="#161B22" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,6">
             <Grid>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Governor Engine: " Foreground="#8B949E" FontSize="11"/>
-                    <TextBlock Text="Active (Windows PPM + Curve Optimizer)" Foreground="{StaticResource AccentGreenBrush}" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="CPU Engine: " Foreground="#8B949E" FontSize="11"/>
+                    <TextBlock Text="Active (Windows PPM + Live Clocks)" Foreground="{StaticResource AccentGreenBrush}" FontSize="11" FontWeight="Bold"/>
                     <TextBlock Text=" • Watchdog: " Foreground="#8B949E" FontSize="11" Margin="10,0,0,0"/>
-                    <TextBlock Text="Armed (Dirty Reboot &amp; 95°C Thermal Trip Protection)" Foreground="{StaticResource AccentGoldBrush}" FontSize="11" FontWeight="Bold"/>
+                    <TextBlock Text="Armed (Dirty Reboot &amp; 95°C Thermal Guard)" Foreground="{StaticResource AccentGoldBrush}" FontSize="11" FontWeight="Bold"/>
                 </StackPanel>
-                <TextBlock Text="ZenithPower v1.0.0 — Zero-BSOD Safe" Foreground="#8B949E" FontSize="11" HorizontalAlignment="Right"/>
+                <TextBlock Text="ZenithPower v1.1.0 — CPU Master" Foreground="#8B949E" FontSize="11" HorizontalAlignment="Right"/>
             </Grid>
         </Border>
     </Grid>

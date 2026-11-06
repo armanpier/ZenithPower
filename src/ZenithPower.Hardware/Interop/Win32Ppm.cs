@@ -20,8 +20,33 @@ namespace ZenithPower.Hardware.Interop
         // Decrease Threshold: 12a07d16-6593-4ced-bc38-a8a4f6d63fc0
         public static readonly Guid GUID_PERF_DECREASE_THRESHOLD = new("12a07d16-6593-4ced-bc38-a8a4f6d63fc0");
 
+        // Maximum Processor State (PROCTHROTTLEMAX): bc5038f7-23e0-4960-96da-33abaf5935ec
+        public static readonly Guid GUID_PROCTHROTTLEMAX = new("bc5038f7-23e0-4960-96da-33abaf5935ec");
+
+        // Minimum Processor State (PROCTHROTTLEMIN): 893dee8e-2bef-41e0-89c6-b55d0929964c
+        public static readonly Guid GUID_PROCTHROTTLEMIN = new("893dee8e-2bef-41e0-89c6-b55d0929964c");
+
         // Core Parking Min Cores: 0cc5b647-c1df-4637-891a-dec607318358
         public static readonly Guid GUID_CORE_PARKING_MIN = new("0cc5b647-c1df-4637-891a-dec607318358");
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PROCESSOR_POWER_INFORMATION
+        {
+            public uint Number;
+            public uint MaxMhz;
+            public uint CurrentMhz;
+            public uint MhzLimit;
+            public uint MaxIdleState;
+            public uint CurrentIdleState;
+        }
+
+        [DllImport("PowrProf.dll")]
+        public static extern int CallNtPowerInformation(
+            int informationLevel,
+            IntPtr lpInputBuffer,
+            int nInputBufferSize,
+            [Out] PROCESSOR_POWER_INFORMATION[] lpOutputBuffer,
+            int nOutputBufferSize);
 
         [DllImport("PowrProf.dll", SetLastError = true)]
         public static extern uint PowerGetActiveScheme(
@@ -40,6 +65,14 @@ namespace ZenithPower.Hardware.Interop
             ref Guid SubGroupOfPowerSettingsGuid,
             ref Guid PowerSettingGuid,
             uint AcValueIndex);
+
+        [DllImport("PowrProf.dll", SetLastError = true)]
+        public static extern uint PowerWriteDCValueIndex(
+            IntPtr RootPowerKey,
+            ref Guid SchemeGuid,
+            ref Guid SubGroupOfPowerSettingsGuid,
+            ref Guid PowerSettingGuid,
+            uint DcValueIndex);
 
         [DllImport("PowrProf.dll", SetLastError = true)]
         public static extern uint PowerReadACValueIndex(

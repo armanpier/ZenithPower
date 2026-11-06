@@ -1,9 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ZenithPower.Core.Abstractions;
@@ -27,25 +25,28 @@ namespace ZenithPower.UI.ViewModels
         private WorkloadPreset _selectedWorkloadPreset = WorkloadPreset.Standard;
         private int _currentEpp = 50;
         private int _currentIncreaseThreshold = 50;
+        private int _currentThrottleMaxPercent = 100;
+        private int _currentThrottleMinPercent = 10;
+        private int _currentBoostMode = 1;
         private double _currentCpuPowerLimitW = 105.0;
-        private double _currentGpuPowerLimitPercent = 100.0;
-        private bool _isMockMode = true;
+        private bool _isMockMode = false; // REAL HARDWARE BY DEFAULT
 
-        // Telemetry properties
+        // Real Telemetry properties
+        private string _cpuName = "Loading CPU...";
+        private int _physicalCoreCount = Environment.ProcessorCount / 2;
+        private int _logicalCoreCount = Environment.ProcessorCount;
+        private double _cpuUsagePercent;
         private double _cpuTempC;
         private double _cpuPowerW;
         private double _nominalMhz;
         private double _effectiveMhz;
         private double _clockStretchingRatio = 1.0;
         private string _clockStretchingStatus = "Healthy";
-        private double _gpuTempC;
-        private double _gpuPowerW;
-        private double _gpuClockMhz;
 
-        // Benchmark state
+        // CPU Benchmark state
         private bool _isBenchmarking;
-        private string _benchmarkStatus = "Ready to calibrate";
-        private string _benchmarkSummary = string.Empty;
+        private string _benchmarkStatus = "Ready to run CPU Benchmark";
+        private CpuBenchmarkReport? _lastBenchmarkReport;
 
         // Alerts / Watchdog
         private string _systemAlert = string.Empty;
@@ -54,8 +55,12 @@ namespace ZenithPower.UI.ViewModels
         public ObservableCollection<CpuCoreInfo> Cores { get; } = new();
         public ObservableCollection<string> BenchmarkLogs { get; } = new();
         public ObservableCollection<CpuHardwarePreset> KnownCpus { get; } = new();
-        public ObservableCollection<GpuHardwarePreset> KnownGpus { get; } = new();
         public ObservableCollection<MemoryHardwarePreset> KnownMemory { get; } = new();
+
+        public string CpuName { get => _cpuName; set => SetProperty(ref _cpuName, value); }
+        public int PhysicalCoreCount { get => _physicalCoreCount; set => SetProperty(ref _physicalCoreCount, value); }
+        public int LogicalCoreCount { get => _logicalCoreCount; set => SetProperty(ref _logicalCoreCount, value); }
+        public double CpuUsagePercent { get => _cpuUsagePercent; set => SetProperty(ref _cpuUsagePercent, value); }
 
         public ProfileType SelectedProfileType
         {
@@ -107,6 +112,45 @@ namespace ZenithPower.UI.ViewModels
             }
         }
 
+        public int CurrentThrottleMaxPercent
+        {
+            get => _currentThrottleMaxPercent;
+            set
+            {
+                if (SetProperty(ref _currentThrottleMaxPercent, value))
+                {
+                    _governor.ActiveProfile.ThrottleMaxPercent = value;
+                    _governor.ApplyPowerProfileAsync(_governor.ActiveProfile);
+                }
+            }
+        }
+
+        public int CurrentThrottleMinPercent
+        {
+            get => _currentThrottleMinPercent;
+            set
+            {
+                if (SetProperty(ref _currentThrottleMinPercent, value))
+                {
+                    _governor.ActiveProfile.ThrottleMinPercent = value;
+                    _governor.ApplyPowerProfileAsync(_governor.ActiveProfile);
+                }
+            }
+        }
+
+        public int CurrentBoostMode
+        {
+            get => _currentBoostMode;
+            set
+            {
+                if (SetProperty(ref _currentBoostMode, value))
+                {
+                    _governor.ActiveProfile.BoostMode = value;
+                    _governor.ApplyPowerProfileAsync(_governor.ActiveProfile);
+                }
+            }
+        }
+
         public double CurrentCpuPowerLimitW
         {
             get => _currentCpuPowerLimitW;
@@ -115,19 +159,6 @@ namespace ZenithPower.UI.ViewModels
                 if (SetProperty(ref _currentCpuPowerLimitW, value))
                 {
                     _governor.ActiveProfile.CpuPowerLimitW = value;
-                    _governor.ApplyPowerProfileAsync(_governor.ActiveProfile);
-                }
-            }
-        }
-
-        public double CurrentGpuPowerLimitPercent
-        {
-            get => _currentGpuPowerLimitPercent;
-            set
-            {
-                if (SetProperty(ref _currentGpuPowerLimitPercent, value))
-                {
-                    _governor.ActiveProfile.GpuPowerLimitPercent = value;
                     _governor.ApplyPowerProfileAsync(_governor.ActiveProfile);
                 }
             }
@@ -151,13 +182,10 @@ namespace ZenithPower.UI.ViewModels
         public double EffectiveMhz { get => _effectiveMhz; set => SetProperty(ref _effectiveMhz, value); }
         public double ClockStretchingRatio { get => _clockStretchingRatio; set => SetProperty(ref _clockStretchingRatio, value); }
         public string ClockStretchingStatus { get => _clockStretchingStatus; set => SetProperty(ref _clockStretchingStatus, value); }
-        public double GpuTempC { get => _gpuTempC; set => SetProperty(ref _gpuTempC, value); }
-        public double GpuPowerW { get => _gpuPowerW; set => SetProperty(ref _gpuPowerW, value); }
-        public double GpuClockMhz { get => _gpuClockMhz; set => SetProperty(ref _gpuClockMhz, value); }
 
         public bool IsBenchmarking { get => _isBenchmarking; set => SetProperty(ref _isBenchmarking, value); }
         public string BenchmarkStatus { get => _benchmarkStatus; set => SetProperty(ref _benchmarkStatus, value); }
-        public string BenchmarkSummary { get => _benchmarkSummary; set => SetProperty(ref _benchmarkSummary, value); }
+        public CpuBenchmarkReport? LastBenchmarkReport { get => _lastBenchmarkReport; set => SetProperty(ref _lastBenchmarkReport, value); }
 
         public string SystemAlert { get => _systemAlert; set => SetProperty(ref _systemAlert, value); }
         public bool HasAlert { get => _hasAlert; set => SetProperty(ref _hasAlert, value); }
@@ -170,13 +198,12 @@ namespace ZenithPower.UI.ViewModels
 
         public MainViewModel()
         {
-            _governor = new MockHardwareGovernor(coreCount: 8);
+            // Default to REAL Windows PPM Hardware Governor
+            _governor = new WindowsPpmGovernor();
             _watchdog = new WatchdogService(_governor);
             _database = new HardwareDatabase();
 
-            // Populate hardware database collections
             foreach (var cpu in _database.Cpus) KnownCpus.Add(cpu);
-            foreach (var gpu in _database.Gpus) KnownGpus.Add(gpu);
             foreach (var mem in _database.Memory) KnownMemory.Add(mem);
 
             SelectProfileCommand = new RelayCommand(p =>
@@ -191,7 +218,7 @@ namespace ZenithPower.UI.ViewModels
                 else if (Enum.TryParse<WorkloadPreset>(p?.ToString(), out var parsed)) SelectedWorkloadPreset = parsed;
             });
 
-            StartBenchmarkCommand = new RelayCommand(async _ => await RunBenchmarkAsync(), _ => !IsBenchmarking);
+            StartBenchmarkCommand = new RelayCommand(async _ => await RunCpuBenchmarkAsync(), _ => !IsBenchmarking);
             DismissAlertCommand = new RelayCommand(() => HasAlert = false);
             AutoTuneAllCoresCommand = new RelayCommand(ApplySmartCurveOptimizer);
 
@@ -214,22 +241,22 @@ namespace ZenithPower.UI.ViewModels
             _telemetryTimer.Tick += (s, e) => UpdateTelemetry();
             _telemetryTimer.Start();
 
-            // Initial telemetry read
-            UpdateTelemetry();
+            // Apply initial profile to real system
+            ApplyProfile(SelectedProfileType, SelectedWorkloadPreset);
         }
 
         private void SwitchGovernorMode(bool mock)
         {
             if (mock)
             {
-                _governor = new MockHardwareGovernor(coreCount: 8);
-                SystemAlert = "Switched to Zero-BSOD Mock Simulation Mode. Safe to test without hardware risk.";
+                _governor = new MockHardwareGovernor(coreCount: _logicalCoreCount);
+                SystemAlert = "Switched to Mock Simulation Mode.";
                 HasAlert = true;
             }
             else
             {
                 _governor = new WindowsPpmGovernor();
-                SystemAlert = "Connected to Live Windows PPM Governor. Applying real system settings.";
+                SystemAlert = "Connected to Live Windows CPU Governor.";
                 HasAlert = true;
             }
 
@@ -243,17 +270,20 @@ namespace ZenithPower.UI.ViewModels
 
             _currentEpp = profile.Epp;
             _currentIncreaseThreshold = profile.IncreaseThresholdPercent;
+            _currentThrottleMaxPercent = profile.ThrottleMaxPercent;
+            _currentThrottleMinPercent = profile.ThrottleMinPercent;
+            _currentBoostMode = profile.BoostMode;
             _currentCpuPowerLimitW = profile.CpuPowerLimitW;
-            _currentGpuPowerLimitPercent = profile.GpuPowerLimitPercent;
 
             OnPropertyChanged(nameof(CurrentEpp));
             OnPropertyChanged(nameof(CurrentIncreaseThreshold));
+            OnPropertyChanged(nameof(CurrentThrottleMaxPercent));
+            OnPropertyChanged(nameof(CurrentThrottleMinPercent));
+            OnPropertyChanged(nameof(CurrentBoostMode));
             OnPropertyChanged(nameof(CurrentCpuPowerLimitW));
-            OnPropertyChanged(nameof(CurrentGpuPowerLimitPercent));
 
             _governor.ApplyPowerProfileAsync(profile);
 
-            // Also balance Curve Optimizer per core for this preset
             var offsets = CurveOptimizerBalancer.CalculateOptimalOffsets(
                 _governor.GetTelemetry().Cores, profile.AllCoreCurveOffset, preset);
             _governor.ApplyCurveOptimizerAsync(offsets);
@@ -273,14 +303,13 @@ namespace ZenithPower.UI.ViewModels
             UpdateTelemetry();
         }
 
-        private async Task RunBenchmarkAsync()
+        private async Task RunCpuBenchmarkAsync()
         {
             IsBenchmarking = true;
             BenchmarkLogs.Clear();
-            BenchmarkStatus = "Calibrating voltage & frequency ratios...";
-            BenchmarkSummary = string.Empty;
+            BenchmarkStatus = "Starting built-in CPU compute benchmark...";
 
-            var runner = new BenchmarkRunner(_governor);
+            var runner = new CpuBenchmarkRunner(_governor);
             var progress = new Progress<string>(msg =>
             {
                 BenchmarkLogs.Add($"[{DateTime.Now:HH:mm:ss}] {msg}");
@@ -289,15 +318,14 @@ namespace ZenithPower.UI.ViewModels
 
             try
             {
-                var result = await runner.RunQuickCalibrationAsync(progress, quickModeSeconds: 2);
-                BenchmarkSummary = result.Summary;
-                BenchmarkStatus = "Calibration complete!";
-                SystemAlert = $"Calibration Success: {result.Summary}";
+                LastBenchmarkReport = await runner.RunFullCpuBenchmarkAsync(progress);
+                BenchmarkStatus = $"Benchmark complete! Multi-Core: {LastBenchmarkReport.MultiCoreScore:N0} pts • Single-Core: {LastBenchmarkReport.SingleCoreScore:N0} pts.";
+                SystemAlert = $"Benchmark Finished: {LastBenchmarkReport.MultiCoreScore:N0} multi-core score on profile {LastBenchmarkReport.ProfileName}.";
                 HasAlert = true;
             }
             catch (Exception ex)
             {
-                BenchmarkStatus = $"Calibration failed: {ex.Message}";
+                BenchmarkStatus = $"Benchmark failed: {ex.Message}";
             }
             finally
             {
@@ -309,28 +337,42 @@ namespace ZenithPower.UI.ViewModels
         private void UpdateTelemetry()
         {
             var snap = _governor.GetTelemetry();
+            CpuName = snap.CpuName;
+            PhysicalCoreCount = snap.PhysicalCoreCount;
+            LogicalCoreCount = snap.LogicalCoreCount;
+            CpuUsagePercent = snap.CpuUsagePercent;
             CpuTempC = snap.CpuPackageTempC;
             CpuPowerW = snap.CpuPackagePowerW;
             NominalMhz = snap.AverageNominalMhz;
             EffectiveMhz = snap.AverageEffectiveMhz;
             ClockStretchingRatio = snap.OverallClockStretchingRatio;
-            GpuTempC = snap.GpuTempC;
-            GpuPowerW = snap.GpuPowerW;
-            GpuClockMhz = snap.GpuClockMhz;
 
             var stretchEval = ClockStretchingDetector.Evaluate(NominalMhz, EffectiveMhz);
             ClockStretchingStatus = stretchEval.Severity switch
             {
-                ClockStretchingSeverity.None => "Healthy (100% Throughput)",
+                ClockStretchingSeverity.None => "Healthy (100% Execution)",
                 ClockStretchingSeverity.Mild => "Mild Stretching (Volts Starving)",
                 ClockStretchingSeverity.Severe => "Severe Stretching (Instability)",
                 _ => "Unknown"
             };
 
-            Cores.Clear();
-            foreach (var core in snap.Cores)
+            // Update core count collection smoothly
+            if (Cores.Count != snap.Cores.Count)
             {
-                Cores.Add(core);
+                Cores.Clear();
+                foreach (var core in snap.Cores)
+                {
+                    Cores.Add(core);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < snap.Cores.Count; i++)
+                {
+                    Cores[i].NominalMhz = snap.Cores[i].NominalMhz;
+                    Cores[i].EffectiveMhz = snap.Cores[i].EffectiveMhz;
+                    Cores[i].CurveOffset = snap.Cores[i].CurveOffset;
+                }
             }
         }
     }

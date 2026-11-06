@@ -22,7 +22,7 @@ namespace ZenithPower.Tests
             Assert.Equal(ProfileType.SuperSaver, governor.ActiveProfile.Type);
             Assert.True(telemetry.CpuPackagePowerW <= 40.0);
             Assert.True(telemetry.CpuPackageTempC <= 50.0);
-            Assert.True(telemetry.GpuPowerW <= 60.0);
+            Assert.Equal(65, telemetry.ActiveThrottleLimitPercent);
         }
 
         [Fact]
@@ -37,7 +37,7 @@ namespace ZenithPower.Tests
             Assert.True(success);
             Assert.Equal(ProfileType.UltimatePerformance, governor.ActiveProfile.Type);
             Assert.True(telemetry.CpuPackagePowerW >= 150.0);
-            Assert.True(telemetry.GpuClockMhz >= 2200.0);
+            Assert.True(telemetry.AverageNominalMhz >= 4500.0);
         }
 
         [Fact]

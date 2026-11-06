@@ -49,15 +49,14 @@ namespace ZenithPower.Watchdog
                 {
                     var telemetry = _governor.GetTelemetry();
 
-                    if (SafetySupervisor.CheckThermalLimit(telemetry.CpuPackageTempC, telemetry.GpuHotspotTempC))
+                    if (SafetySupervisor.CheckThermalLimit(telemetry.CpuPackageTempC, 0.0))
                     {
                         EmergencyThermalActionTriggered?.Invoke(this,
-                            $"[THERMAL EMERGENCY] CPU: {telemetry.CpuPackageTempC:F1}°C, GPU Hotspot: {telemetry.GpuHotspotTempC:F1}°C. Stepping down power limit by 25%.");
+                            $"[THERMAL EMERGENCY] CPU: {telemetry.CpuPackageTempC:F1}°C. Stepping down power limit by 25%.");
 
                         // Emergency thermal step-down
                         var reducedProfile = _governor.ActiveProfile;
                         reducedProfile.CpuPowerLimitW *= 0.75;
-                        reducedProfile.GpuPowerLimitPercent = Math.Max(50.0, reducedProfile.GpuPowerLimitPercent * 0.75);
                         await _governor.ApplyPowerProfileAsync(reducedProfile);
                     }
 
@@ -69,7 +68,7 @@ namespace ZenithPower.Watchdog
                 }
                 catch
                 {
-                    // Guard loop against unhandled driver exceptions
+                    // Guard loop against unhandled exceptions
                 }
             }
         }

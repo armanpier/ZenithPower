@@ -14,7 +14,7 @@ namespace ZenithPower.Hardware.Governors
         public PowerProfile ActiveProfile => _activeProfile;
         public bool IsMockMode => true;
 
-        public MockHardwareGovernor(int coreCount = 8)
+        public MockHardwareGovernor(int coreCount = 16)
         {
             for (int i = 0; i < coreCount; i++)
             {
@@ -24,8 +24,8 @@ namespace ZenithPower.Hardware.Governors
                     coreIndex: i,
                     isStarCore: isStar,
                     ranking: rank,
-                    nominalMhz: isStar ? 5400.0 : 5000.0,
-                    effectiveMhz: isStar ? 5390.0 : 4990.0,
+                    nominalMhz: isStar ? 5050.0 : 4800.0,
+                    effectiveMhz: isStar ? 5040.0 : 4790.0,
                     curveOffset: 0));
             }
         }
@@ -34,22 +34,19 @@ namespace ZenithPower.Hardware.Governors
         {
             _activeProfile = profile;
 
-            // Adjust simulated clocks and voltages based on profile
             double nominalBase = profile.Type switch
             {
-                ProfileType.SuperSaver => 2800.0,
-                ProfileType.Saver => 3600.0,
-                ProfileType.Normal => 4800.0,
-                ProfileType.Performance => 5200.0,
-                ProfileType.UltimatePerformance => 5500.0,
-                _ => 4800.0
+                ProfileType.SuperSaver => 2200.0,
+                ProfileType.Saver => 2900.0,
+                ProfileType.Normal => 3700.0,
+                ProfileType.Performance => 4500.0,
+                ProfileType.UltimatePerformance => 5000.0,
+                _ => 3700.0
             };
 
             foreach (var core in _cores)
             {
-                core.NominalMhz = core.IsStarCore ? nominalBase + 300.0 : nominalBase;
-                // If negative curve offset is within safe zone, effective tracks closely.
-                // If curve offset is deeper than -25 on non-stars, trigger mild clock stretching in mock
+                core.NominalMhz = core.IsStarCore ? nominalBase + 250.0 : nominalBase;
                 if (core.CurveOffset < -26)
                 {
                     core.EffectiveMhz = core.NominalMhz * 0.94; // Mild stretching simulation
@@ -88,35 +85,23 @@ namespace ZenithPower.Hardware.Governors
         {
             double cpuTemp = _activeProfile.Type switch
             {
-                ProfileType.SuperSaver => 41.5,
-                ProfileType.Saver => 48.0,
-                ProfileType.Normal => 62.0,
-                ProfileType.Performance => 74.0,
-                ProfileType.UltimatePerformance => 82.0,
-                _ => 60.0
+                ProfileType.SuperSaver => 38.0,
+                ProfileType.Saver => 45.0,
+                ProfileType.Normal => 58.0,
+                ProfileType.Performance => 70.0,
+                ProfileType.UltimatePerformance => 78.0,
+                _ => 55.0
             };
 
             double cpuPower = _activeProfile.Type switch
             {
-                ProfileType.SuperSaver => 32.0,
-                ProfileType.Saver => 58.0,
-                ProfileType.Normal => 102.0,
-                ProfileType.Performance => 140.0,
-                ProfileType.UltimatePerformance => 220.0,
-                _ => 95.0
+                ProfileType.SuperSaver => 28.0,
+                ProfileType.Saver => 48.0,
+                ProfileType.Normal => 85.0,
+                ProfileType.Performance => 125.0,
+                ProfileType.UltimatePerformance => 180.0,
+                _ => 85.0
             };
-
-            double gpuClock = _activeProfile.Type switch
-            {
-                ProfileType.SuperSaver => 800.0,
-                ProfileType.Saver => 1400.0,
-                ProfileType.Normal => 1950.0,
-                ProfileType.Performance => 2350.0,
-                ProfileType.UltimatePerformance => 2600.0,
-                _ => 1800.0
-            };
-
-            double gpuPower = (_activeProfile.GpuPowerLimitPercent / 100.0) * 280.0 * (_activeProfile.Type == ProfileType.SuperSaver ? 0.3 : 0.85);
 
             double sumNominal = 0;
             double sumEffective = 0;
@@ -131,16 +116,16 @@ namespace ZenithPower.Hardware.Governors
 
             return new TelemetrySnapshot
             {
+                CpuName = "AMD Ryzen 9 5950X (Simulated)",
+                PhysicalCoreCount = _cores.Count / 2,
+                LogicalCoreCount = _cores.Count,
+                CpuUsagePercent = _activeProfile.Type == ProfileType.SuperSaver ? 8.0 : 35.0,
                 CpuPackageTempC = cpuTemp,
                 CpuPackagePowerW = cpuPower,
                 AverageNominalMhz = avgNominal,
                 AverageEffectiveMhz = avgEffective,
                 OverallClockStretchingRatio = avgNominal > 0 ? avgEffective / avgNominal : 1.0,
-                GpuTempC = cpuTemp - 5.0,
-                GpuHotspotTempC = cpuTemp + 7.0,
-                GpuPowerW = gpuPower,
-                GpuUsagePercent = _activeProfile.Type == ProfileType.SuperSaver ? 15.0 : 65.0,
-                GpuClockMhz = gpuClock,
+                ActiveThrottleLimitPercent = _activeProfile.ThrottleMaxPercent,
                 Cores = new List<CpuCoreInfo>(_cores)
             };
         }

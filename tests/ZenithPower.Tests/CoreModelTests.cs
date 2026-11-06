@@ -14,9 +14,9 @@ namespace ZenithPower.Tests
             Assert.Equal(ProfileType.SuperSaver, profile.Type);
             Assert.Equal(85, profile.Epp);
             Assert.Equal(85, profile.IncreaseThresholdPercent);
-            Assert.Equal(3, profile.BoostMode); // Efficient Enabled
+            Assert.Equal(0, profile.BoostMode); // Disabled for cold idle
+            Assert.Equal(65, profile.ThrottleMaxPercent);
             Assert.Equal(35.0, profile.CpuPowerLimitW);
-            Assert.Equal(50.0, profile.GpuPowerLimitPercent);
         }
 
         [Fact]
@@ -28,8 +28,9 @@ namespace ZenithPower.Tests
             Assert.Equal(0, profile.Epp);
             Assert.Equal(10, profile.IncreaseThresholdPercent);
             Assert.Equal(2, profile.BoostMode); // Aggressive
+            Assert.Equal(100, profile.ThrottleMaxPercent);
+            Assert.Equal(100, profile.ThrottleMinPercent);
             Assert.Equal(250.0, profile.CpuPowerLimitW);
-            Assert.Equal(115.0, profile.GpuPowerLimitPercent);
         }
 
         [Theory]
