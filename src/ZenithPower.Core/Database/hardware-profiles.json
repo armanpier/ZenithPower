@@ -1,0 +1,175 @@
+{
+  "cpus": [
+    {
+      "name": "AMD Ryzen 7 7800X3D",
+      "architecture": "Zen 4 (3D V-Cache)",
+      "socket": "AM5",
+      "stockTdpW": 120.0,
+      "ecoTdpW": 45.0,
+      "maxTdpW": 140.0,
+      "recommendedMaxNegativeOffset": -25,
+      "recommendedStarCoreNegativeOffset": -5,
+      "maxSafePackageTempC": 89.0
+    },
+    {
+      "name": "AMD Ryzen 9 7950X",
+      "architecture": "Zen 4",
+      "socket": "AM5",
+      "stockTdpW": 170.0,
+      "ecoTdpW": 65.0,
+      "maxTdpW": 230.0,
+      "recommendedMaxNegativeOffset": -20,
+      "recommendedStarCoreNegativeOffset": -5,
+      "maxSafePackageTempC": 95.0
+    },
+    {
+      "name": "AMD Ryzen 7 7700X",
+      "architecture": "Zen 4",
+      "socket": "AM5",
+      "stockTdpW": 105.0,
+      "ecoTdpW": 45.0,
+      "maxTdpW": 142.0,
+      "recommendedMaxNegativeOffset": -25,
+      "recommendedStarCoreNegativeOffset": -7,
+      "maxSafePackageTempC": 95.0
+    },
+    {
+      "name": "AMD Ryzen 7 9800X3D",
+      "architecture": "Zen 5 (3D V-Cache)",
+      "socket": "AM5",
+      "stockTdpW": 120.0,
+      "ecoTdpW": 45.0,
+      "maxTdpW": 160.0,
+      "recommendedMaxNegativeOffset": -30,
+      "recommendedStarCoreNegativeOffset": -10,
+      "maxSafePackageTempC": 95.0
+    },
+    {
+      "name": "AMD Ryzen 7 5800X3D",
+      "architecture": "Zen 3 (3D V-Cache)",
+      "socket": "AM4",
+      "stockTdpW": 105.0,
+      "ecoTdpW": 45.0,
+      "maxTdpW": 142.0,
+      "recommendedMaxNegativeOffset": -30,
+      "recommendedStarCoreNegativeOffset": -15,
+      "maxSafePackageTempC": 90.0
+    },
+    {
+      "name": "Intel Core i9-14900K",
+      "architecture": "Raptor Lake Refresh",
+      "socket": "LGA1700",
+      "stockTdpW": 253.0,
+      "ecoTdpW": 65.0,
+      "maxTdpW": 320.0,
+      "recommendedMaxNegativeOffset": -15,
+      "recommendedStarCoreNegativeOffset": -5,
+      "maxSafePackageTempC": 100.0
+    },
+    {
+      "name": "Intel Core i7-14700K",
+      "architecture": "Raptor Lake Refresh",
+      "socket": "LGA1700",
+      "stockTdpW": 253.0,
+      "ecoTdpW": 65.0,
+      "maxTdpW": 288.0,
+      "recommendedMaxNegativeOffset": -15,
+      "recommendedStarCoreNegativeOffset": -5,
+      "maxSafePackageTempC": 100.0
+    },
+    {
+      "name": "Intel Core i7-13700K",
+      "architecture": "Raptor Lake",
+      "socket": "LGA1700",
+      "stockTdpW": 253.0,
+      "ecoTdpW": 65.0,
+      "maxTdpW": 253.0,
+      "recommendedMaxNegativeOffset": -15,
+      "recommendedStarCoreNegativeOffset": -5,
+      "maxSafePackageTempC": 100.0
+    },
+    {
+      "name": "Intel Core i5-13600K",
+      "architecture": "Raptor Lake",
+      "socket": "LGA1700",
+      "stockTdpW": 181.0,
+      "ecoTdpW": 45.0,
+      "maxTdpW": 181.0,
+      "recommendedMaxNegativeOffset": -20,
+      "recommendedStarCoreNegativeOffset": -7,
+      "maxSafePackageTempC": 100.0
+    }
+  ],
+  "gpus": [
+    {
+      "name": "NVIDIA GeForce RTX 4090",
+      "architecture": "Ada Lovelace",
+      "stockTdpW": 450.0,
+      "ecoTdpW": 280.0,
+      "maxTdpW": 500.0,
+      "vfCurveAnchorMilliVolts": 950,
+      "targetBoostClockMhz": 2700.0
+    },
+    {
+      "name": "NVIDIA GeForce RTX 4080",
+      "architecture": "Ada Lovelace",
+      "stockTdpW": 320.0,
+      "ecoTdpW": 200.0,
+      "maxTdpW": 355.0,
+      "vfCurveAnchorMilliVolts": 925,
+      "targetBoostClockMhz": 2650.0
+    },
+    {
+      "name": "NVIDIA GeForce RTX 4070 Ti",
+      "architecture": "Ada Lovelace",
+      "stockTdpW": 285.0,
+      "ecoTdpW": 170.0,
+      "maxTdpW": 300.0,
+      "vfCurveAnchorMilliVolts": 950,
+      "targetBoostClockMhz": 2610.0
+    },
+    {
+      "name": "NVIDIA GeForce RTX 3080",
+      "architecture": "Ampere",
+      "stockTdpW": 320.0,
+      "ecoTdpW": 220.0,
+      "maxTdpW": 350.0,
+      "vfCurveAnchorMilliVolts": 875,
+      "targetBoostClockMhz": 1900.0
+    },
+    {
+      "name": "AMD Radeon RX 7900 XTX",
+      "architecture": "RDNA 3",
+      "stockTdpW": 355.0,
+      "ecoTdpW": 240.0,
+      "maxTdpW": 400.0,
+      "vfCurveAnchorMilliVolts": 1050,
+      "targetBoostClockMhz": 2500.0
+    },
+    {
+      "name": "AMD Radeon RX 7800 XT",
+      "architecture": "RDNA 3",
+      "stockTdpW": 263.0,
+      "ecoTdpW": 180.0,
+      "maxTdpW": 290.0,
+      "vfCurveAnchorMilliVolts": 1025,
+      "targetBoostClockMhz": 2430.0
+    }
+  ],
+  "memory": [
+    {
+      "type": "DDR5",
+      "jedecVoltageV": 1.10,
+      "xmpExpoTypicalVoltageV": 1.35,
+      "maxRecommendedSocVoltageV": 1.25,
+      "guideline": "Keep AM5 SoC voltage at or below 1.25V for safe 24/7 longevity with EXPO."
+    },
+    {
+      "type": "DDR4",
+      "jedecVoltageV": 1.20,
+      "xmpExpoTypicalVoltageV": 1.35,
+      "maxRecommendedSocVoltageV": 1.15,
+      "guideline": "Standard DDR4 XMP operates reliably at 1.35V VDIMM with 1.10-1.15V SoC/VCCSA."
+    }
+  ]
+}
