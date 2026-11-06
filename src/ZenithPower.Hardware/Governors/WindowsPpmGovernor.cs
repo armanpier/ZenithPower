@@ -134,27 +134,31 @@ namespace ZenithPower.Hardware.Governors
                     Guid throttleMaxGuid = Win32Ppm.GUID_PROCTHROTTLEMAX;
                     Guid throttleMinGuid = Win32Ppm.GUID_PROCTHROTTLEMIN;
 
-                    // Set Maximum Processor State (% limit)
+                    // 1. Temporarily drop Min to 5% first so Windows PPM will not reject lowering Max
+                    Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref throttleMinGuid, 5);
+                    Win32Ppm.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref throttleMinGuid, 5);
+
+                    // 2. Set Maximum Processor State (% limit)
                     Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref throttleMaxGuid, (uint)profile.ThrottleMaxPercent);
                     Win32Ppm.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref throttleMaxGuid, (uint)profile.ThrottleMaxPercent);
 
-                    // Set Minimum Processor State (% limit)
+                    // 3. Set Target Minimum Processor State (% limit)
                     Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref throttleMinGuid, (uint)profile.ThrottleMinPercent);
                     Win32Ppm.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref throttleMinGuid, (uint)profile.ThrottleMinPercent);
 
-                    // Set EPP (Energy Performance Preference)
+                    // 4. Set EPP (Energy Performance Preference)
                     Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref eppGuid, (uint)profile.Epp);
                     Win32Ppm.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref eppGuid, (uint)profile.Epp);
 
-                    // Set Boost Mode (0=Disabled, 1=Enabled, 2=Aggressive, 3=Efficient)
+                    // 5. Set Boost Mode (0=Disabled, 1=Enabled, 2=Aggressive, 3=Efficient)
                     Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref boostGuid, (uint)profile.BoostMode);
                     Win32Ppm.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref boostGuid, (uint)profile.BoostMode);
 
-                    // Set Increase & Decrease Thresholds
+                    // 6. Set Increase & Decrease Thresholds
                     Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref incThresholdGuid, (uint)profile.IncreaseThresholdPercent);
                     Win32Ppm.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subgroup, ref decThresholdGuid, (uint)profile.DecreaseThresholdPercent);
 
-                    // Re-activate scheme to apply instantly
+                    // 7. Flush and Activate
                     Win32Ppm.PowerSetActiveScheme(IntPtr.Zero, ref activeScheme);
                 }
             }
@@ -172,19 +176,30 @@ namespace ZenithPower.Hardware.Governors
         {
             try
             {
+                // Drop Min to 5 first to avoid Min > Max conflict in powercfg
+                RunPowerCfg("/setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5");
+                RunPowerCfg("/setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5");
+
+                // Set Max
                 RunPowerCfg($"/setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec {profile.ThrottleMaxPercent}");
                 RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec {profile.ThrottleMaxPercent}");
 
+                // Set Target Min
                 RunPowerCfg($"/setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c {profile.ThrottleMinPercent}");
                 RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c {profile.ThrottleMinPercent}");
 
+                // Set Boost Mode
                 RunPowerCfg($"/setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 be337238-0d82-4146-a960-4f3749d470c7 {profile.BoostMode}");
                 RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 be337238-0d82-4146-a960-4f3749d470c7 {profile.BoostMode}");
 
+                // Set EPP
                 RunPowerCfg($"/setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 36687f9e-e3a5-4dbf-b1dc-15eb381c6863 {profile.Epp}");
                 RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 36687f9e-e3a5-4dbf-b1dc-15eb381c6863 {profile.Epp}");
 
+                // Set Increase Threshold
                 RunPowerCfg($"/setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 06cadf0e-64ed-448a-8927-ce7bf90eb35d {profile.IncreaseThresholdPercent}");
+
+                // Force activate
                 RunPowerCfg("/setactive SCHEME_CURRENT");
             }
             catch

@@ -36,62 +36,74 @@ namespace ZenithPower.Core.Engine
             var initialSnapshot = _governor.GetTelemetry();
             int threads = Environment.ProcessorCount;
 
-            progress?.Report($"[1/3] Warming up {threads} CPU threads on {initialSnapshot.CpuName}...");
-            await Task.Delay(500, ct);
+            progress?.Report($"[1/3] Preparing {threads} threads for {_governor.ActiveProfile.Type} ({_governor.ActiveProfile.Preset})...");
+            await Task.Delay(400, ct);
 
-            // Phase 1: Multi-Threaded Stress & Benchmark
-            progress?.Report($"[2/3] Running All-Core Multi-Threaded Compute Benchmark ({threads} threads)...");
-            var swMulti = Stopwatch.StartNew();
+            // Phase 1: Multi-Threaded Sustained Compute Stress (2.0s duration)
+            progress?.Report($"[2/3] Running All-Core Multi-Threaded Stress ({threads} threads for 2.0s)...");
+            const int multiDurationMs = 2000;
             long totalMultiOps = 0;
+            var swMulti = Stopwatch.StartNew();
 
             await Task.Run(() =>
             {
-                Parallel.For(0, threads, new ParallelOptions { CancellationToken = ct }, i =>
+                Parallel.For(0, threads, new ParallelOptions { CancellationToken = ct }, _ =>
                 {
-                    long ops = ComputeStressKernel(iterations: 150_000);
-                    Interlocked.Add(ref totalMultiOps, ops);
+                    long localOps = 0;
+                    var localSw = Stopwatch.StartNew();
+                    while (localSw.ElapsedMilliseconds < multiDurationMs && !ct.IsCancellationRequested)
+                    {
+                        localOps += ComputeBatch(batchSize: 10_000);
+                    }
+                    Interlocked.Add(ref totalMultiOps, localOps);
                 });
             }, ct);
 
             swMulti.Stop();
-            double multiSeconds = Math.Max(0.1, swMulti.Elapsed.TotalSeconds);
-            long multiScore = (long)((totalMultiOps / multiSeconds) / 100);
+            double multiSeconds = Math.Max(0.01, swMulti.Elapsed.TotalSeconds);
+            // Multi-Core Score is scaled to standard intuitive benchmark points
+            long multiScore = (long)((totalMultiOps / multiSeconds) / 1000);
 
-            progress?.Report($"Multi-Core Score: {multiScore:N0} points ({multiSeconds:F2}s).");
+            progress?.Report($"Multi-Core Score: {multiScore:N0} pts ({multiSeconds:F2}s, {totalMultiOps:N0} total operations).");
             await Task.Delay(300, ct);
 
-            // Phase 2: Single-Threaded Burst Benchmark
-            progress?.Report("[3/3] Running Single-Threaded Peak Frequency Benchmark...");
+            // Phase 2: Single-Threaded Burst Benchmark (1.5s duration on 1 thread)
+            progress?.Report("[3/3] Running Single-Threaded Peak Frequency Benchmark (1.5s)...");
+            const int singleDurationMs = 1500;
+            long totalSingleOps = 0;
             var swSingle = Stopwatch.StartNew();
-            long singleOps = 0;
 
             await Task.Run(() =>
             {
-                singleOps = ComputeStressKernel(iterations: 80_000);
+                var localSw = Stopwatch.StartNew();
+                while (localSw.ElapsedMilliseconds < singleDurationMs && !ct.IsCancellationRequested)
+                {
+                    totalSingleOps += ComputeBatch(batchSize: 10_000);
+                }
             }, ct);
 
             swSingle.Stop();
-            double singleSeconds = Math.Max(0.1, swSingle.Elapsed.TotalSeconds);
-            long singleScore = (long)((singleOps / singleSeconds) / 100);
+            double singleSeconds = Math.Max(0.01, swSingle.Elapsed.TotalSeconds);
+            long singleScore = (long)((totalSingleOps / singleSeconds) / 1000);
 
             // Query live telemetry after run
             var finalTelemetry = _governor.GetTelemetry();
-            double totalOps = totalMultiOps + singleOps;
+            double totalOps = totalMultiOps + totalSingleOps;
             double totalSeconds = multiSeconds + singleSeconds;
 
             string rating = multiScore switch
             {
-                > 50000 => "Elite Workstation / High-End Desktop Tier",
-                > 30000 => "High Performance Enthusiast Tier",
-                > 15000 => "Mainstream Performance Tier",
-                _ => "Power Saver / Standard Tier"
+                > 55000 => "Elite Workstation / High-End Desktop Tier",
+                > 35000 => "High Performance Enthusiast Tier",
+                > 20000 => "Mainstream Performance Tier",
+                _ => "Power Saver / Constrained Frequency Tier"
             };
 
             return new CpuBenchmarkReport
             {
                 CpuName = initialSnapshot.CpuName,
                 ThreadCount = threads,
-                ProfileName = _governor.ActiveProfile.Type.ToString(),
+                ProfileName = $"{_governor.ActiveProfile.Type} ({_governor.ActiveProfile.Preset})",
                 MultiCoreScore = multiScore,
                 SingleCoreScore = singleScore,
                 OperationsPerSecond = totalOps / totalSeconds,
@@ -101,11 +113,10 @@ namespace ZenithPower.Core.Engine
             };
         }
 
-        private static long ComputeStressKernel(int iterations)
+        private static long ComputeBatch(int batchSize)
         {
             long ops = 0;
-            // Prime Sieve + floating-point transcendentals
-            for (int i = 2; i < iterations; i++)
+            for (int i = 2; i < batchSize; i++)
             {
                 bool isPrime = true;
                 int limit = (int)Math.Sqrt(i);

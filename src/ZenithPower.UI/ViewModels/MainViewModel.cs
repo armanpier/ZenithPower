@@ -69,6 +69,7 @@ namespace ZenithPower.UI.ViewModels
             {
                 if (SetProperty(ref _selectedProfileType, value))
                 {
+                    NotifyProfileSelectionChanged();
                     ApplyProfile(value, SelectedWorkloadPreset);
                 }
             }
@@ -81,9 +82,41 @@ namespace ZenithPower.UI.ViewModels
             {
                 if (SetProperty(ref _selectedWorkloadPreset, value))
                 {
+                    NotifyPresetSelectionChanged();
                     ApplyProfile(SelectedProfileType, value);
                 }
             }
+        }
+
+        // Selection state helpers for XAML Triggers
+        public bool IsSuperSaverSelected => SelectedProfileType == ProfileType.SuperSaver;
+        public bool IsSaverSelected => SelectedProfileType == ProfileType.Saver;
+        public bool IsNormalSelected => SelectedProfileType == ProfileType.Normal;
+        public bool IsPerformanceSelected => SelectedProfileType == ProfileType.Performance;
+        public bool IsUltimateSelected => SelectedProfileType == ProfileType.UltimatePerformance;
+
+        public bool IsStandardPresetSelected => SelectedWorkloadPreset == WorkloadPreset.Standard;
+        public bool IsGamingPresetSelected => SelectedWorkloadPreset == WorkloadPreset.Gaming;
+        public bool IsRenderingPresetSelected => SelectedWorkloadPreset == WorkloadPreset.Rendering;
+        public bool IsSingleThreadedPresetSelected => SelectedWorkloadPreset == WorkloadPreset.SingleThreaded;
+        public bool IsTurboPresetSelected => SelectedWorkloadPreset == WorkloadPreset.Turbo;
+
+        private void NotifyProfileSelectionChanged()
+        {
+            OnPropertyChanged(nameof(IsSuperSaverSelected));
+            OnPropertyChanged(nameof(IsSaverSelected));
+            OnPropertyChanged(nameof(IsNormalSelected));
+            OnPropertyChanged(nameof(IsPerformanceSelected));
+            OnPropertyChanged(nameof(IsUltimateSelected));
+        }
+
+        private void NotifyPresetSelectionChanged()
+        {
+            OnPropertyChanged(nameof(IsStandardPresetSelected));
+            OnPropertyChanged(nameof(IsGamingPresetSelected));
+            OnPropertyChanged(nameof(IsRenderingPresetSelected));
+            OnPropertyChanged(nameof(IsSingleThreadedPresetSelected));
+            OnPropertyChanged(nameof(IsTurboPresetSelected));
         }
 
         public int CurrentEpp
@@ -267,6 +300,54 @@ namespace ZenithPower.UI.ViewModels
         {
             var profile = PowerProfile.CreateDefault(type);
             profile.Preset = preset;
+
+            // Apply Workload Preset adaptations
+            switch (preset)
+            {
+                case WorkloadPreset.Gaming:
+                    profile.BoostMode = Math.Max(profile.BoostMode, 2); // Aggressive Boost
+                    profile.Epp = Math.Min(profile.Epp, 15);           // Rapid response ramp
+                    profile.IncreaseThresholdPercent = Math.Min(profile.IncreaseThresholdPercent, 15);
+                    break;
+
+                case WorkloadPreset.Rendering:
+                    profile.BoostMode = Math.Max(profile.BoostMode, 1);
+                    profile.ThrottleMaxPercent = 100;
+                    profile.CpuPowerLimitW = Math.Max(profile.CpuPowerLimitW, 145.0);
+                    break;
+
+                case WorkloadPreset.SingleThreaded:
+                    profile.BoostMode = Math.Max(profile.BoostMode, 2); // Aggressive Boost on Star Cores
+                    profile.Epp = Math.Min(profile.Epp, 5);             // Instant ramp
+                    profile.IncreaseThresholdPercent = Math.Min(profile.IncreaseThresholdPercent, 10);
+                    break;
+
+                case WorkloadPreset.Turbo:
+                    profile.BoostMode = 2;                             // Aggressive Boost
+                    profile.ThrottleMaxPercent = 100;
+                    profile.ThrottleMinPercent = 100;                  // Lock max P-State
+                    profile.Epp = 0;                                   // Max throughput
+                    profile.IncreaseThresholdPercent = 5;
+                    profile.CpuPowerLimitW = Math.Max(profile.CpuPowerLimitW, 200.0);
+                    break;
+            }
+
+            // Power Profile overrides for power-saving modes
+            if (type == ProfileType.SuperSaver)
+            {
+                profile.ThrottleMaxPercent = 65; // Frequency capped to 65% of base
+                profile.ThrottleMinPercent = 5;
+                profile.BoostMode = 0;           // Disable CPPC boost to eliminate heat spikes
+                profile.Epp = 85;
+                profile.IncreaseThresholdPercent = 85;
+            }
+            else if (type == ProfileType.Saver)
+            {
+                profile.ThrottleMaxPercent = 85; // Frequency capped to 85%
+                profile.ThrottleMinPercent = 5;
+                profile.BoostMode = 3;           // Efficient boost
+                profile.Epp = 65;
+            }
 
             _currentEpp = profile.Epp;
             _currentIncreaseThreshold = profile.IncreaseThresholdPercent;
